@@ -2,17 +2,42 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "./auth.model.js";
 
-const createToken = (user) => {
+const createAccessToken = (user) => {
   return jwt.sign(
     {
       id: user._id,
       email: user.email,
+      tokenType: "access",
+    },
+    process.env.JWT_SECRET || "dev-secret-key",
+    {
+      expiresIn: "15m",
+    },
+  );
+};
+
+const createRefreshToken = (user) => {
+  return jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+      tokenType: "refresh",
     },
     process.env.JWT_SECRET || "dev-secret-key",
     {
       expiresIn: "7d",
     },
   );
+};
+
+const buildUserResponse = (user) => {
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    preferredCurrency: user.preferredCurrency,
+    createdAt: user.createdAt,
+  };
 };
 
 export const registerUser = async ({ name, email, password }) => {
@@ -33,17 +58,13 @@ export const registerUser = async ({ name, email, password }) => {
     preferredCurrency: "PHP",
   });
 
-  const token = createToken(user);
+  const accessToken = createAccessToken(user);
+  const refreshToken = createRefreshToken(user);
 
   return {
-    token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      preferredCurrency: user.preferredCurrency,
-      createdAt: user.createdAt,
-    },
+    accessToken,
+    refreshToken,
+    user: buildUserResponse(user),
   };
 };
 
@@ -64,17 +85,41 @@ export const loginUser = async ({ email, password }) => {
     throw error;
   }
 
-  const token = createToken(user);
+  const accessToken = createAccessToken(user);
+  const refreshToken = createRefreshToken(user);
 
   return {
-    token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      preferredCurrency: user.preferredCurrency,
-      createdAt: user.createdAt,
-    },
+    accessToken,
+    refreshToken,
+    user: buildUserResponse(user),
+  };
+};
+
+export const refreshAccessToken = async (refreshToken) => {
+  const payload = jwt.verify(
+    refreshToken,
+    process.env.JWT_SECRET || "dev-secret-key",
+  );
+
+  if (payload.tokenType !== "refresh") {
+    const error = new Error("Invalid token type");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const user = await User.findById(payload.id);
+
+  if (!user) {
+    const error = new Error("User not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const accessToken = createAccessToken(user);
+
+  return {
+    accessToken,
+    user: buildUserResponse(user),
   };
 };
 
@@ -94,11 +139,5 @@ export const getCurrentUser = async (userId) => {
     throw error;
   }
 
-  return {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    preferredCurrency: user.preferredCurrency,
-    createdAt: user.createdAt,
-  };
+  return buildUserResponse(user);
 };

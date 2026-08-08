@@ -1,4 +1,8 @@
-import { registerUser, loginUser, logoutUser, getCurrentUser } from "./auth.service.js";
+import {
+  registerUser,
+  loginUser,
+  getCurrentUser,
+} from "./auth.service.js";
 import {
   validateRegisterPayload,
   validateLoginPayload,
@@ -19,10 +23,17 @@ export const register = async (req, res, next) => {
 
     const result = await registerUser(validation.normalizedData);
 
-    res.cookie("token", result.token, {
+    res.cookie("access_token", result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "Strict",
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie("refresh_token", result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -53,10 +64,17 @@ export const login = async (req, res, next) => {
 
     const result = await loginUser(validation.normalizedData);
 
-    res.cookie("token", result.token, {
+    res.cookie("access_token", result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "Strict",
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie("refresh_token", result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -73,7 +91,8 @@ export const login = async (req, res, next) => {
 };
 
 export const logout = (req, res) => {
-  res.clearCookie("token");
+  res.clearCookie("access_token");
+  res.clearCookie("refresh_token");
 
   return res.status(200).json({
     success: true,
