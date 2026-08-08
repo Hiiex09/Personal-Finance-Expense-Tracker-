@@ -57,7 +57,10 @@ export const authenticate = async (req, res, next) => {
 
     return next();
   } catch (error) {
-    if (error.name === "TokenExpiredError" || error.name === "JsonWebTokenError") {
+    if (
+      error.name === "TokenExpiredError" ||
+      error.name === "JsonWebTokenError"
+    ) {
       try {
         const refreshToken = req.cookies?.refresh_token;
 

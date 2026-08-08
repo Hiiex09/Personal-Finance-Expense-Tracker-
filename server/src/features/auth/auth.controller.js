@@ -1,8 +1,4 @@
-import {
-  registerUser,
-  loginUser,
-  getCurrentUser,
-} from "./auth.service.js";
+import { registerUser, loginUser, getCurrentUser } from "./auth.service.js";
 import {
   validateRegisterPayload,
   validateLoginPayload,
