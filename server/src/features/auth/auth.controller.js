@@ -1,3 +1,4 @@
+import { generateToken } from "../../lib/utils.js";
 import { registerUser, loginUser, getCurrentUser } from "./auth.service.js";
 import {
   validateRegisterPayload,
@@ -19,19 +20,7 @@ export const register = async (req, res, next) => {
 
     const result = await registerUser(validation.normalizedData);
 
-    res.cookie("access_token", result.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 15 * 60 * 1000,
-    });
-
-    res.cookie("refresh_token", result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    generateToken(result.user.id, res);
 
     return res.status(201).json({
       success: true,
@@ -60,19 +49,7 @@ export const login = async (req, res, next) => {
 
     const result = await loginUser(validation.normalizedData);
 
-    res.cookie("access_token", result.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 15 * 60 * 1000,
-    });
-
-    res.cookie("refresh_token", result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    generateToken(result.user.id, res);
 
     return res.status(200).json({
       success: true,
