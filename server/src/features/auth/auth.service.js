@@ -2,34 +2,6 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "./auth.model.js";
 
-const createAccessToken = (user) => {
-  return jwt.sign(
-    {
-      id: user._id,
-      email: user.email,
-      tokenType: "access",
-    },
-    process.env.JWT_SECRET || "dev-secret-key",
-    {
-      expiresIn: "15m",
-    },
-  );
-};
-
-const createRefreshToken = (user) => {
-  return jwt.sign(
-    {
-      id: user._id,
-      email: user.email,
-      tokenType: "refresh",
-    },
-    process.env.JWT_SECRET || "dev-secret-key",
-    {
-      expiresIn: "7d",
-    },
-  );
-};
-
 const buildUserResponse = (user) => {
   return {
     id: user._id,
@@ -58,12 +30,7 @@ export const registerUser = async ({ name, email, password }) => {
     preferredCurrency: "PHP",
   });
 
-  const accessToken = createAccessToken(user);
-  const refreshToken = createRefreshToken(user);
-
   return {
-    accessToken,
-    refreshToken,
     user: buildUserResponse(user),
   };
 };
@@ -85,12 +52,7 @@ export const loginUser = async ({ email, password }) => {
     throw error;
   }
 
-  const accessToken = createAccessToken(user);
-  const refreshToken = createRefreshToken(user);
-
   return {
-    accessToken,
-    refreshToken,
     user: buildUserResponse(user),
   };
 };
@@ -115,7 +77,11 @@ export const refreshAccessToken = async (refreshToken) => {
     throw error;
   }
 
-  const accessToken = createAccessToken(user);
+  const accessToken = jwt.sign(
+    { id: user._id },
+    process.env.JWT_SECRET || "dev-secret-key",
+    { expiresIn: "15m" },
+  );
 
   return {
     accessToken,
